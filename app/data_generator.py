@@ -9,7 +9,7 @@ from typing import List, Tuple
 import uuid
 
 from faker import Faker
-from models import UserOut, AnalysisHistoryOut, UserRole, AnalysisType
+from app.models import UserOut, AnalysisHistoryOut, UserRole, AnalysisType
 
 fake = Faker()
 
