@@ -8,11 +8,14 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY requirements.txt /app/
+# Install Poetry
+RUN pip install --no-cache-dir poetry
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the pyproject.toml and poetry.lock files
+COPY pyproject.toml poetry.lock /app/
+
+# Install dependencies using Poetry
+RUN poetry install --no-root
 
 # Copy the application code into the container
 COPY . /app/
@@ -20,5 +23,11 @@ COPY . /app/
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Install Taskfile binary
+RUN apt-get update && apt-get install -y curl && \
+    curl -sL https://taskfile.dev/install.sh | sh && \
+    mv ./bin/task /usr/local/bin/task && \
+    rm -rf ./bin && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Command to run the application using Taskfile
+CMD ["/bin/bash", "-c", "task run"]
