@@ -16,6 +16,7 @@ from app.models import (
 from app.data_generator import DataGenerator
 from app.auth import authenticate_user, create_access_token, get_current_user  # Candidate must implement
 from app.llm_utils import analyze_text  # Candidate must implement
+from app.core.exceptions import backend_exception_handler, BackendError
 
 app = FastAPI(
     title="Infinitgraph Document Analyzer",
@@ -23,6 +24,8 @@ app = FastAPI(
     version="1.0.0",
     docs_url=None,
 )
+
+app.add_exception_handler(BackendError, backend_exception_handler)
 
 
 @app.middleware("http")
