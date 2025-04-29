@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 import json
 
 # Import your FastAPI app
-from src.infinitgraph_fastapi.main import app
+from app.main import app
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 import datetime
 
-from src.infinitgraph_fastapi.models import (
+from app.models import (
     TextInput,
     TextAnalysisResult,
     SentimentResult,
