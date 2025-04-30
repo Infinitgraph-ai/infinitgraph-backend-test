@@ -12,12 +12,13 @@ import datetime
 import jwt
 import bcrypt
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
 from fastapi.security import OAuth2PasswordBearer
 
 from typing import Optional
 
 from app.models import UserOut, UserRole
+from app.core.exceptions import BackendError
 
 # You may use a fixed set of credentials for this test
 DUMMY_USERS = {
@@ -118,10 +119,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserOut:
     Raises:
         HTTPException: If token is invalid or user not found
     """
-    # TODO: Implement current user extraction from token
-    # 1. Define the credentials_exception
-    # 2. Try to decode the JWT token
-    # 3. Extract the username from the token
-    # 4. Look up the user in DUMMY_USERS
-    # 5. Convert to UserOut model and return
-    pass
+    credentials_exception = BackendError(
+        status=status.HTTP_401_UNAUTHORIZED,
+        message="Could not validate credentials",
+        data={"error": "Invalid token"},
+    )
+
+    try:
+        payload = jwt.decode(token, key="my-secret-key", algorithms=["HS256"])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+    user = DUMMY_USERS.get(username)
+    if user is None:
+        raise credentials_exception
+
+    return UserOut(
+        id=user.get('id'),
+        username=user.get('username'),
+        email=user.get('email'),
+        role=user.get('role'),
+        is_active=user.get('is_active'),
+        created_at=user.get('created_at'),
+    )

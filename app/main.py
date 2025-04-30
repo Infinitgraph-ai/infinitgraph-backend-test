@@ -1,15 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request
+from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request, status, Form
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse
 from fastapi_pagination import Page, add_pagination, paginate
-from typing import List, Optional, Dict, Any
-import json
 import time
 
 from app.models import (
     TextInput, 
     TextAnalysisResult, 
     UserOut, 
+    UserRole,
     AnalysisHistoryOut,
     TokenResponse
 )
@@ -61,7 +60,7 @@ users, history = generator.generate_data()
 
 
 @app.post("/api/token", response_model=TokenResponse, tags=["Authentication"])
-async def login_for_access_token(username: str = Body(...), password: str = Body(...)):
+async def login_for_access_token(username: str = Form(...), password: str = Form(...)):
     """
     Get an access token for API authentication
     
@@ -112,8 +111,8 @@ async def get_users(
 ):
     """Get list of users (admin only)"""
     # TODO: Candidate should implement role-based access control
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to access this resource")
+    if current_user.role != UserRole.ADMIN:
+        raise BackendError(status=status.HTTP_403_FORBIDDEN, message="Access denied")
     
     return paginate(users)
 
