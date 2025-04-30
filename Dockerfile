@@ -22,6 +22,8 @@ RUN pip install --no-cache-dir poetry
 # Copy the pyproject.toml and poetry.lock files
 COPY pyproject.toml poetry.lock /app/
 
+RUN poetry lock
+
 # Install dependencies using Poetry
 RUN poetry install --no-root
 
@@ -38,4 +40,4 @@ RUN apt-get update && apt-get install -y curl && \
     rm -rf ./bin && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Command to run the application using Taskfile
-CMD ["/bin/bash", "-c", "task run"]
+CMD ["task", "run"]
