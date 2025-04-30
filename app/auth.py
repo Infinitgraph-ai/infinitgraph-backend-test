@@ -8,12 +8,16 @@ Key tasks:
 3. Create a dependency for protecting endpoints
 
 """
+import datetime
+import jwt
+import bcrypt
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+
 from typing import Optional
+
 from app.models import UserOut, UserRole
-import datetime
 
 # You may use a fixed set of credentials for this test
 DUMMY_USERS = {
@@ -21,7 +25,7 @@ DUMMY_USERS = {
         "id": 1,
         "username": "admin",
         "email": "admin@infinitgraph.ai",
-        "hashed_password": "$2b$12$UwWN8ZFAg6F.OHqlchQgKepKVPhKFAyESOQqJIcQjTB8yDQJA05ca",  # "adminpass"
+        "hashed_password": "$2b$12$MR9qkz9YkqD2Me6jynPc5O9OtFC3uDrKuYgk8WgzBJHaE8osgnlAq",  # "adminpass"
         "role": UserRole.ADMIN,
         "is_active": True,
         "created_at": datetime.datetime(2023, 1, 1, 0, 0, 0)
@@ -30,7 +34,7 @@ DUMMY_USERS = {
         "id": 2,
         "username": "user",
         "email": "user@example.com",
-        "hashed_password": "$2b$12$3lrVx9U4sFkLp9yX42yCXO0S0AeDtvdDX66zYDGAK5Gwe0gj3pGcq",  # "userpass"
+        "hashed_password": "$2b$12$StzpD21bEbyFAcOSVThO9.OtwkqpxGIGZqSM88qp5EJJJP4OeZ1Fu",  # "userpass"
         "role": UserRole.USER,
         "is_active": True,
         "created_at": datetime.datetime(2023, 2, 1, 0, 0, 0)
@@ -56,7 +60,23 @@ def authenticate_user(username: str, password: str) -> Optional[UserOut]:
     # 1. Check if username exists in DUMMY_USERS
     # 2. Verify the password hash
     # 3. Convert to UserOut model and return
-    pass
+    user = DUMMY_USERS.get(username)
+    
+    if not user:
+        return None
+
+    if not bcrypt.checkpw(password.encode('utf-8'), user.get('hashed_password').encode('utf-8')):
+        return None
+
+    return UserOut(
+        id=user.get('id'),
+        username=user.get('username'),
+        email=user.get('email'),
+        role=user.get('role'),
+        is_active=user.get('is_active'),
+        created_at=user.get('created_at'),
+    )
+
 
 
 # TODO: Implement the create_access_token function
@@ -74,7 +94,14 @@ def create_access_token(data: dict) -> str:
     # 1. Create a copy of data
     # 2. Set expiration time (e.g., 30 minutes)
     # 3. Create and return the JWT token
-    pass
+
+    now = datetime.datetime.now()
+    expire = now + datetime.timedelta(minutes=30)
+    payload = data.copy()
+
+    payload |= {"exp": expire, "iat": now, "nbf": now, "iss": "infinitgraph.ai"}
+
+    return jwt.encode(payload, key="my-secret-key", algorithm="HS256")
 
 
 # TODO: Implement the get_current_user dependency

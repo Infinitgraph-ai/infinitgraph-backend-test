@@ -69,8 +69,9 @@ async def login_for_access_token(username: str = Body(...), password: str = Body
     """
     # TODO: Candidate should implement this in auth.py
     user = authenticate_user(username, password)
+    
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise BackendError(status=401, message="Invalid credentials")
     
     access_token = create_access_token(data={"sub": username})
     return {"access_token": access_token, "token_type": "bearer"}
