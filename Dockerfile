@@ -11,8 +11,7 @@ ENV PYTHONPATH=/app \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=1.8.0 \
-    GEMINI_API_KEY=AIzaSyB7vHziZV895UgInzEZtj10ym_RuyxkMOc
+    POETRY_VERSION=1.8.0
 
 # Set the working directory in the container
 WORKDIR /app
@@ -30,6 +29,12 @@ RUN poetry install --no-root
 
 # Copy the application code into the container
 COPY . /app/
+
+# Copy the .env file into the container
+COPY app/.env /app/.env
+
+# Ensure the .env file is loaded as environment variables
+ENV GEMINI_API_KEY=${GEMINI_API_KEY}
 
 # Expose the port the app runs on
 EXPOSE 8000
