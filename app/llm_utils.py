@@ -15,6 +15,9 @@ from typing import Dict, List, Optional, Any
 import datetime
 import random
 import json
+import os
+
+import google.generativeai as genai
 
 from app.models import (
     AnalysisType,
@@ -24,7 +27,11 @@ from app.models import (
     EntityResult
 )
 
-# TODO: Implement analyze_text function
+# Set up Gemini API key
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+
 def analyze_text(text: str, analysis_type: AnalysisType) -> TextAnalysisResult:
     """
     Analyze text using LLM techniques based on the specified analysis type.
@@ -46,79 +53,119 @@ def analyze_text(text: str, analysis_type: AnalysisType) -> TextAnalysisResult:
         ValueError: If text is empty or analysis type is invalid
         RuntimeError: If the mock LLM processing fails
     """
-    # TODO: Implement text analysis based on analysis_type
-    # 1. Validate input
-    # 2. Perform analysis based on type 
-    # 3. Format response according to TextAnalysisResult model
-    pass
-
-
-# TODO: Implement helper functions for each analysis type
-def _generate_summary(text: str) -> str:
-    """
-    Generate a summary of the text.
+    if not text:
+        raise ValueError("Text input cannot be empty")
     
-    Args:
-        text: The text to summarize
-        
-    Returns:
-        A summary of the text
-    """
-    # TODO: Implement summary generation 
-    pass
+    if analysis_type not in AnalysisType:
+        raise ValueError(f"Invalid analysis type: {analysis_type}")
+    
+    summary = None
+    sentiment = None
+    keywords = None
+    entities = None
+    classification = None
+    
+    # Mock LLM processing
+    match analysis_type:
+        case AnalysisType.SUMMARY:
+            result = _generate_summary(text)
+            summary = result
+        case AnalysisType.SENTIMENT:
+            result = _analyze_sentiment(text)
+            sentiment = result
+        case AnalysisType.KEYWORDS:
+            result = _extract_keywords(text)
+            keywords = result
+        case AnalysisType.ENTITIES:
+            result = _extract_entities(text)
+            entities = result
+        case AnalysisType.CLASSIFICATION:
+            result = _classify_text(text)
+            classification = result
+        case _:
+            raise ValueError(f"Unsupported analysis type: {analysis_type}")
 
+    # Format response
+    response = TextAnalysisResult(
+        analysis_type=analysis_type,
+        summary=summary,
+        sentiment=sentiment,
+        keywords=keywords,
+        entities=entities,
+        classification=classification,
+        timestamp=datetime.datetime.now().isoformat()
+    )
+
+    return response
+
+def _generate_summary(text: str) -> str:
+    prompt = f"Summarize the following text:\n\n{text}"
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
 def _analyze_sentiment(text: str) -> SentimentResult:
-    """
-    Analyze the sentiment of the text.
-    
-    Args:
-        text: The text to analyze
-        
-    Returns:
-        SentimentResult object with sentiment scores
-    """
-    # TODO: Implement sentiment analysis 
-    pass
-
+    prompt = (
+        "Analyze the sentiment of the following text.\n"
+        "Respond ONLY with a raw JSON object (no markdown, no backticks, no explanation).\n"
+        "Format:\n"
+        '{ "positive": float (0 to 1), "negative": float (0 to 1), "neutral": float (0 to 1), "dominant": "positive" | "neutral" | "negative" }\n\n'
+        "Do not use any surrounding formatting. Do not return a list. Do not wrap the response in triple quotes or backticks.\n"
+        f"{text}"
+    )
+    response = model.generate_content(prompt)
+    try:
+        parsed = eval(response.text.strip())
+        return SentimentResult(
+            positive=parsed["positive"],
+            negative=parsed["negative"],
+            neutral=parsed["neutral"],
+            dominant=parsed["dominant"]
+        )
+    except Exception:
+        raise RuntimeError("Failed to parse sentiment response")
 
 def _extract_keywords(text: str) -> List[KeywordResult]:
-    """
-    Extract keywords from the text.
-    
-    Args:
-        text: The text to analyze
-        
-    Returns:
-        List of KeywordResult objects
-    """
-    # TODO: Implement keyword extraction 
-    pass
-
+    prompt = (
+        "Extract up to 5 important keywords from the following text.\n"
+        "Respond **only** with a raw JSON array (no markdown, no backticks, no explanation).\n"
+        "Do not use any surrounding formatting. Do not return a list. Do not wrap the response in triple quotes or backticks.\n"
+        "Format: [{\"keyword\": \"example\", \"relevance\": 0.85}, ...]\n\n"
+        f"{text}"
+    )
+    response = model.generate_content(prompt)
+    try:
+        parsed = json.loads(response.text.strip())
+        return [KeywordResult(keyword=k["keyword"], relevance=k["relevance"]) for k in parsed]
+    except Exception:
+        raise RuntimeError("Failed to parse keywords response")
 
 def _extract_entities(text: str) -> List[EntityResult]:
-    """
-    Extract entities from the text.
-    
-    Args:
-        text: The text to analyze
-        
-    Returns:
-        List of EntityResult objects
-    """
-    # TODO: Implement entity extraction 
-    pass
-
+    prompt = (
+        "Extract entities from the following text.\n"
+        "Respond **only** with a raw JSON array (no markdown, no backticks, no explanation).\n"
+        "Do not use any surrounding formatting. Do not return a list. Do not wrap the response in triple quotes or backticks.\n"
+        "Format: [{\"text\": \"example\", \"type\": \"example\", \"confidence\": 0.85}, ...]\n\n"
+        f"{text}"
+    )
+    response = model.generate_content(prompt)
+    try:
+        parsed = eval(response.text.strip())
+        return [EntityResult(text=e["text"], type=e["type"], confidence=e["confidence"]) for e in parsed]
+    except Exception:
+        raise RuntimeError("Failed to parse entities response")
 
 def _classify_text(text: str) -> Dict[str, float]:
-    """
-    Classify the text into categories.
-    
-    Args:
-        text: The text to classify
-        
-    Returns:
-        Dictionary mapping category names to confidence scores
-    """
-    # TODO: Implement text classification 
-    pass
+    prompt = (
+        "Classify the following text into categories.\n"
+        "Respond with **only** a raw JSON object (no Markdown, no triple backticks, no arrays, no explanation).\n"
+        "Do not use any surrounding formatting. Do not return a list. Do not wrap the response in triple quotes or backticks.\n"
+        "Return format example: {\"category1\": 0.85, \"category2\": 0.75}\n"
+        "IMPORTANT: Output must be a single valid JSON object, not a list of objects.\n\n"
+        f"{text}"
+    )
+    response = model.generate_content(prompt)
+    try:
+        print(response.text.strip())
+        return eval(response.text.strip())
+    except Exception as e:
+        raise RuntimeError(f"Failed to parse classification response: {str(e)}")
