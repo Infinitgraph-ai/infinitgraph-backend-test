@@ -18,6 +18,7 @@ httpx = "0.25.2"
 faker = "20.1.0"
 fastapi-pagination = "0.12.12"
 python-multipart = "0.0.6"
+PyJWT = "^2.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "7.4.3"
