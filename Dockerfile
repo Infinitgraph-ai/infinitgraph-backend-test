@@ -14,13 +14,13 @@ ENV PYTHONPATH=/app \
     POETRY_VERSION=1.8.0
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /backend
 
 # Install Poetry
 RUN pip install --no-cache-dir poetry
 
 # Copy the pyproject.toml and poetry.lock files
-COPY pyproject.toml poetry.lock /app/
+COPY pyproject.toml poetry.lock /backend/
 
 RUN poetry lock
 
@@ -28,13 +28,7 @@ RUN poetry lock
 RUN poetry install --no-root
 
 # Copy the application code into the container
-COPY . /app/
-
-# Copy the .env file into the container
-COPY app/.env /app/.env
-
-# Ensure the .env file is loaded as environment variables
-ENV GEMINI_API_KEY=${GEMINI_API_KEY}
+COPY . /backend/
 
 # Expose the port the app runs on
 EXPOSE 8000
