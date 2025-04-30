@@ -56,4 +56,4 @@ def backend_exception_handler(request: Request, exc: BackendError) -> JSONRespon
     Returns:
         result (ORJSONResponse): Transformed JSON response from Back-end exception.
     """
-    return JSONResponse(content=exc.dict(), status_code=exc.code)
+    return JSONResponse(content=exc.dict(), status_code=exc.status)

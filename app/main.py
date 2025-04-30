@@ -1,8 +1,12 @@
+import time
+import os
+
 from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request, status, Form
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse
 from fastapi_pagination import Page, add_pagination, paginate
-import time
+
+import google.generativeai as genai
 
 from app.models import (
     TextInput, 
@@ -70,7 +74,7 @@ async def login_for_access_token(username: str = Form(...), password: str = Form
     user = authenticate_user(username, password)
     
     if not user:
-        raise BackendError(status=401, message="Invalid credentials")
+        raise BackendError(status=status.HTTP_401_UNAUTHORIZED, message="Invalid credentials")
     
     access_token = create_access_token(data={"sub": username})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -102,7 +106,7 @@ async def analyze_text_endpoint(
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        raise BackendError(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=f"Analysis failed: {str(e)}", data={"error": str(e)})
 
 
 @app.get("/api/users", response_model=Page[UserOut], tags=["User Management"])
@@ -130,6 +134,23 @@ async def get_analysis_history(
 @app.get("/api/health", tags=["System"])
 async def health_check():
     """API health check endpoint"""
+    # check if gemini API key is set
+    if not os.getenv("GEMINI_API_KEY"):
+        raise BackendError(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Gemini API key not set")
+    
+    # check if the API is reachable
+    try:
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        model.generate_content("test")
+    except Exception as e:
+        raise BackendError(
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            message="Gemini API is not reachable", 
+            data={"error": str(e)}
+        )
+    
+    # If everything is fine, return a healthy status
     return {"status": "healthy", "api_version": "1.0.0"}
 
 
