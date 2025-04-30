@@ -11,7 +11,8 @@ ENV PYTHONPATH=/app \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=1.8.0
+    POETRY_VERSION=1.8.0 \
+    GEMINI_API_KEY=AIzaSyB7vHziZV895UgInzEZtj10ym_RuyxkMOc
 
 # Set the working directory in the container
 WORKDIR /app
