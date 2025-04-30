@@ -10,7 +10,6 @@ import jwt
 
 # Import your FastAPI app
 from app.main import app
-from app.models import TextInput
 
 
 @pytest.fixture
@@ -27,12 +26,12 @@ def auth_headers():
     Dynamically generates a valid JWT token for the specified user role.
     """
     def generate_headers(username):
-        secret_key = "my-secret-key"  # Ensure this matches the application's secret key
+        secret_key = "my-secret-key"
         payload = {
             "sub": username,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
-            "iat": datetime.datetime.utcnow(),
-            "nbf": datetime.datetime.utcnow()
+            "exp": datetime.datetime.now() + datetime.timedelta(minutes=30),
+            "iat": datetime.datetime.now(),
+            "nbf": datetime.datetime.now()
         }
         token = jwt.encode(payload, key=secret_key, algorithm="HS256")
         return {"Authorization": f"Bearer {token}"}
@@ -95,7 +94,7 @@ def test_api_analyze(client, auth_headers):
 
 def test_api_users_admin_access(client, auth_headers):
     """Test the /api/users endpoint for admin access"""
-    # Admin token
+    # admin token
     admin_headers = auth_headers("admin")
     response = client.get("/api/users", headers=admin_headers)
     assert response.status_code == 200
@@ -103,7 +102,7 @@ def test_api_users_admin_access(client, auth_headers):
     assert "items" in data
     assert len(data["items"]) > 0
 
-    # Non-admin token
+    # non admin token
     user_headers = auth_headers("user")
     response = client.get("/api/users", headers=user_headers)
     assert response.status_code == 403
@@ -113,7 +112,7 @@ def test_api_users_admin_access(client, auth_headers):
 
 def test_api_history_user_access(client, auth_headers):
     """Test the /api/history endpoint for user-specific access"""
-    # User token
+    # user token
     user_headers = auth_headers("user")
     response = client.get("/api/history", headers=user_headers)
     assert response.status_code == 200
@@ -121,7 +120,7 @@ def test_api_history_user_access(client, auth_headers):
     assert "items" in data
     assert all(item["user_id"] == 2 for item in data["items"])  # ID 2 is "user"
 
-    # Admin token (should see their own history only)
+    # admin token (should see their own history only)
     admin_headers = auth_headers("admin")
     response = client.get("/api/history", headers=admin_headers)
     assert response.status_code == 200
