@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONPATH=/app \
+ENV PYTHONPATH=/backend \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
