@@ -1,9 +1,7 @@
 import typing
 
 from fastapi import Request, status
-from fastapi.responses import ORJSONResponse
-
-from app.core.enums import JSENDStatus
+from fastapi.responses import JSONResponse
 
 
 class BackendError(Exception):
@@ -14,18 +12,13 @@ class BackendError(Exception):
     def __init__(
         self,
         *,
-        status: JSENDStatus = JSENDStatus.FAIL,
+        status,
         data = None,
         message: str,
         code: int = status.HTTP_400_BAD_REQUEST,
     ) -> None:
-        """Initializer for BackException.
-
-        Keyword Args:
-            status (JSENDStatus): status for JSEND
-            data: any detail or data for this exception.
-            message (str): any text detail for this exception.
-            code (int): HTTP status code or custom code from Back-end.
+        """
+        Initializer for BackException.
         """
         self.status = status
         self.data = data
@@ -46,14 +39,14 @@ class BackendError(Exception):
     def dict(self) -> dict[str, typing.Any]:
         """Converts BackendException to python dict. Actually used to wrap JSEND response."""
         return {
-            "status": self.status.value if isinstance(self.status, JSENDStatus) else self.status,
+            "status": self.status,
             "data": self.data,
             "message": self.message,
             "code": self.code,
         }
 
 
-def backend_exception_handler(request: Request, exc: BackendError) -> ORJSONResponse:
+def backend_exception_handler(request: Request, exc: BackendError) -> JSONResponse:
     """Handler for BackendException.
 
     Args:
@@ -63,4 +56,4 @@ def backend_exception_handler(request: Request, exc: BackendError) -> ORJSONResp
     Returns:
         result (ORJSONResponse): Transformed JSON response from Back-end exception.
     """
-    return ORJSONResponse(content=exc.dict(), status_code=exc.code)
+    return JSONResponse(content=exc.dict(), status_code=exc.code)
