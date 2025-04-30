@@ -5,10 +5,12 @@ Tests for the FastAPI endpoints in the Infinitgraph.ai application.
 
 import pytest
 from fastapi.testclient import TestClient
-import json
+import datetime
+import jwt
 
 # Import your FastAPI app
 from app.main import app
+from app.models import TextInput
 
 
 @pytest.fixture
@@ -22,16 +24,20 @@ def auth_headers():
     """
     This fixture provides authentication headers for protected endpoints.
     
-    Note: In a real implementation, this would use the actual authentication.
-    For this test example, we're using a mock token.
-    
-    The candidate should implement proper authentication tests.
+    Dynamically generates a valid JWT token for the specified user role.
     """
-    # Example token - this is just a placeholder
-    # In your implementation, you should generate a real token
-    mock_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxNjE2MjM5MDIyfQ.mock-signature"
-    
-    return {"Authorization": f"Bearer {mock_token}"}
+    def generate_headers(username):
+        secret_key = "my-secret-key"  # Ensure this matches the application's secret key
+        payload = {
+            "sub": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+            "iat": datetime.datetime.utcnow(),
+            "nbf": datetime.datetime.utcnow()
+        }
+        token = jwt.encode(payload, key=secret_key, algorithm="HS256")
+        return {"Authorization": f"Bearer {token}"}
+
+    return generate_headers
 
 
 def test_health_check(client):
@@ -48,3 +54,77 @@ def test_api_docs_redirect(client):
     response = client.get("/", follow_redirects=False)
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
+
+
+def test_api_token(client):
+    """Test the /api/token endpoint for authentication"""
+    # Valid credentials
+    response = client.post("/api/token", data={"username": "admin", "password": "adminpass"})
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+    # Invalid credentials
+    response = client.post("/api/token", data={"username": "admin", "password": "wrongpass"})
+    assert response.status_code == 401
+    data = response.json()
+    assert data["status"] == 401
+    assert "Invalid credentials" in data["message"]
+
+def test_api_analyze(client, auth_headers):
+    """Test the /api/analyze endpoint for text analysis"""
+    # Valid analysis request
+    response = client.post(
+        "/api/analyze",
+        json={"text": "This is a test text for analysis.", "analysis_type": "summary"},
+        headers=auth_headers("user")
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["analysis_type"] == "summary"
+    assert "summary" in data
+
+    # Invalid analysis type
+    response = client.post(
+        "/api/analyze",
+        json={"text": "This is a test text for analysis.", "analysis_type": "invalid_type"},
+        headers=auth_headers("user")
+    )
+    assert response.status_code == 422
+
+def test_api_users_admin_access(client, auth_headers):
+    """Test the /api/users endpoint for admin access"""
+    # Admin token
+    admin_headers = auth_headers("admin")
+    response = client.get("/api/users", headers=admin_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "items" in data
+    assert len(data["items"]) > 0
+
+    # Non-admin token
+    user_headers = auth_headers("user")
+    response = client.get("/api/users", headers=user_headers)
+    assert response.status_code == 403
+    data = response.json()
+    assert data["status"] == 403
+    assert "Access denied" in data["message"]
+
+def test_api_history_user_access(client, auth_headers):
+    """Test the /api/history endpoint for user-specific access"""
+    # User token
+    user_headers = auth_headers("user")
+    response = client.get("/api/history", headers=user_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "items" in data
+    assert all(item["user_id"] == 2 for item in data["items"])  # ID 2 is "user"
+
+    # Admin token (should see their own history only)
+    admin_headers = auth_headers("admin")
+    response = client.get("/api/history", headers=admin_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "items" in data
+    assert all(item["user_id"] == 1 for item in data["items"])  # ID 1 is "admin"

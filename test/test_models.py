@@ -31,7 +31,6 @@ def test_text_input_validation():
     with pytest.raises(ValidationError):
         TextInput(text="   ")
 
-
 def test_sentiment_result_validation():
     """Test validation rules for SentimentResult model"""
     # Valid sentiment
@@ -84,3 +83,33 @@ def test_text_analysis_result_validation():
     assert keywords_result.analysis_type == AnalysisType.KEYWORDS
     assert len(keywords_result.keywords) == 2
     assert keywords_result.keywords[0].keyword == "test"
+
+
+def test_keyword_result_validation():
+    """Test validation rules for KeywordResult model"""
+    # Valid keyword result
+    valid_keyword = KeywordResult(keyword="example", relevance=0.9)
+    assert valid_keyword.keyword == "example"
+    assert valid_keyword.relevance == 0.9
+
+    # Test relevance out of range
+    with pytest.raises(ValidationError):
+        KeywordResult(keyword="example", relevance=1.1)
+
+    with pytest.raises(ValidationError):
+        KeywordResult(keyword="example", relevance=-0.1)
+
+def test_entity_result_validation():
+    """Test validation rules for EntityResult model"""
+    # Valid entity result
+    valid_entity = EntityResult(text="example", type="organization", confidence=0.85)
+    assert valid_entity.text == "example"
+    assert valid_entity.type == "organization"
+    assert valid_entity.confidence == 0.85
+
+    # Test confidence out of range
+    with pytest.raises(ValidationError):
+        EntityResult(text="example", type="organization", confidence=1.1)
+
+    with pytest.raises(ValidationError):
+        EntityResult(text="example", type="organization", confidence=-0.1)
