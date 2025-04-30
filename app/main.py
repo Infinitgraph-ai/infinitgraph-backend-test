@@ -136,7 +136,10 @@ async def health_check():
     """API health check endpoint"""
     # check if gemini API key is set
     if not os.getenv("GEMINI_API_KEY"):
-        raise BackendError(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Gemini API key not set")
+        raise BackendError(
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            message="Gemini API key not set"
+        )
     
     # check if the API is reachable
     try:

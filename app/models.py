@@ -75,7 +75,7 @@ class TextAnalysisResult(BaseModel):
     classification: Optional[Dict[str, float]] = None
     processed_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     
-    @validator('*')
+    @validator("*", pre=True, always=True)
     def ensure_result_for_type(cls, v, values):
         if 'analysis_type' in values:
             analysis_type = values['analysis_type']
