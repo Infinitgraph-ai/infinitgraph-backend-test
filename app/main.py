@@ -6,16 +6,16 @@ from typing import List, Optional, Dict, Any
 import json
 import time
 
-from models import (
+from app.models import (
     TextInput, 
     TextAnalysisResult, 
     UserOut, 
     AnalysisHistoryOut,
     TokenResponse
 )
-from data_generator import DataGenerator
-from auth import authenticate_user, create_access_token, get_current_user  # Candidate must implement
-from llm_utils import analyze_text  # Candidate must implement
+from app.data_generator import DataGenerator
+from app.auth import authenticate_user, create_access_token, get_current_user  # Candidate must implement
+from app.llm_utils import analyze_text  # Candidate must implement
 
 app = FastAPI(
     title="Infinitgraph Document Analyzer",

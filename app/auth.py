@@ -12,7 +12,7 @@ Key tasks:
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
-from models import UserOut, UserRole
+from app.models import UserOut, UserRole
 import datetime
 
 # You may use a fixed set of credentials for this test

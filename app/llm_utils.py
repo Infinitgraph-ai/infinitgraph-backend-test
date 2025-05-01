@@ -16,7 +16,7 @@ import datetime
 import random
 import json
 
-from models import (
+from app.models import (
     AnalysisType,
     TextAnalysisResult,
     SentimentResult,
