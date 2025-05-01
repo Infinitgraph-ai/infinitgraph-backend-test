@@ -1,18 +1,18 @@
-from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request
+from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request, Form
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse
 from fastapi_pagination import Page, add_pagination, paginate
 from typing import List, Optional, Dict, Any
+from fastapi.exceptions import RequestValidationError
 import json
 import time
-
 from app.models import (
     TextInput, 
     TextAnalysisResult, 
     UserOut, 
     AnalysisHistoryOut,
-    TokenResponse
-)
+    TokenResponse,
+)   
 from app.data_generator import DataGenerator
 from app.auth import authenticate_user, create_access_token, get_current_user  # Candidate must implement
 from app.llm_utils import analyze_text  # Candidate must implement
@@ -58,7 +58,7 @@ users, history = generator.generate_data()
 
 
 @app.post("/api/token", response_model=TokenResponse, tags=["Authentication"])
-async def login_for_access_token(username: str = Body(...), password: str = Body(...)):
+async def login_for_access_token(username: str = Form(...), password: str = Form(...)):
     """
     Get an access token for API authentication
     
@@ -70,7 +70,10 @@ async def login_for_access_token(username: str = Body(...), password: str = Body
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
     access_token = create_access_token(data={"sub": username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 
 @app.post("/api/analyze", response_model=TextAnalysisResult, tags=["Text Analysis"])

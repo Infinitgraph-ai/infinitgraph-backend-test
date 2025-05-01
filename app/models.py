@@ -8,7 +8,6 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 import datetime
 
-
 class AnalysisType(str, Enum):
     """Types of text analysis that can be performed"""
     SUMMARY = "summary"
