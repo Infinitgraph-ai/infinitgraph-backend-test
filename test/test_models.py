@@ -6,13 +6,14 @@ import pytest
 from pydantic import ValidationError
 import datetime
 
-from src.infinitgraph_fastapi.models import (
+from app.models import (
     TextInput,
     TextAnalysisResult,
     SentimentResult,
     KeywordResult,
     EntityResult,
-    AnalysisType
+    AnalysisType,
+    ClassificationResult
 )
 
 
@@ -47,13 +48,13 @@ def test_sentiment_result_validation():
     with pytest.raises(ValidationError):
         SentimentResult(positive=-0.1, negative=0.1, neutral=0.2, dominant="negative")
         
-
 def test_text_analysis_result_validation():
     """Test validation rules for TextAnalysisResult model"""
     # Test summary analysis
     summary_result = TextAnalysisResult(
         analysis_type=AnalysisType.SUMMARY,
-        summary="This is a summary of the text."
+        summary="This is a summary of the text.",
+        processed_at=datetime.datetime.now()
     )
     assert summary_result.analysis_type == AnalysisType.SUMMARY
     assert summary_result.summary == "This is a summary of the text."
@@ -61,7 +62,8 @@ def test_text_analysis_result_validation():
     # Test sentiment analysis
     sentiment_result = TextAnalysisResult(
         analysis_type=AnalysisType.SENTIMENT,
-        sentiment=SentimentResult(positive=0.6, negative=0.2, neutral=0.2, dominant="positive")
+        sentiment=SentimentResult(positive=0.6, negative=0.2, neutral=0.2, dominant="positive"),
+        processed_at=datetime.datetime.now()
     )
     assert sentiment_result.analysis_type == AnalysisType.SENTIMENT
     assert sentiment_result.sentiment.dominant == "positive"
@@ -70,7 +72,8 @@ def test_text_analysis_result_validation():
     with pytest.raises(ValueError):
         TextAnalysisResult(
             analysis_type=AnalysisType.SUMMARY,
-            summary=None
+            summary=None,
+            processed_at=datetime.datetime.now()
         )
         
     # Test keywords analysis
@@ -79,8 +82,35 @@ def test_text_analysis_result_validation():
         keywords=[
             KeywordResult(keyword="test", relevance=0.9),
             KeywordResult(keyword="example", relevance=0.8)
-        ]
+        ],
+        processed_at=datetime.datetime.now()
     )
     assert keywords_result.analysis_type == AnalysisType.KEYWORDS
     assert len(keywords_result.keywords) == 2
     assert keywords_result.keywords[0].keyword == "test"
+
+    # Test entities analysis
+    entities_result = TextAnalysisResult(
+        analysis_type=AnalysisType.ENTITIES,
+        entities=[
+            EntityResult(text="John", type="PERSON", confidence=0.9),
+            EntityResult(text="New York", type="LOCATION", confidence=0.95)
+        ],
+        processed_at=datetime.datetime.now()
+    )
+    assert entities_result.analysis_type == AnalysisType.ENTITIES
+    assert len(entities_result.entities) == 2
+    assert entities_result.entities[0].text == "John"
+
+    # Test classification analysis 
+    classification_result = TextAnalysisResult(
+        analysis_type=AnalysisType.CLASSIFICATION,
+        classification=[
+            ClassificationResult(classification="news", confidence=0.8),
+            ClassificationResult(classification="politics", confidence=0.6)
+        ],
+        processed_at=datetime.datetime.now()
+    )
+    assert classification_result.analysis_type == AnalysisType.CLASSIFICATION
+    assert len(classification_result.classification) == 2
+    assert classification_result.classification[0].classification == "news"

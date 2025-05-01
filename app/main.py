@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Header, Body, Request, Form
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse
 from fastapi_pagination import Page, add_pagination, paginate
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Callable
 from fastapi.exceptions import RequestValidationError
 import json
 import time
@@ -16,7 +16,7 @@ from app.models import (
 from app.data_generator import DataGenerator
 from app.auth import authenticate_user, create_access_token, get_current_user  # Candidate must implement
 from app.llm_utils import analyze_text  # Candidate must implement
-
+import app.llm_client as llm_client
 app = FastAPI(
     title="Infinitgraph Document Analyzer",
     description="An API for analyzing text using LLMs",
@@ -76,23 +76,28 @@ async def login_for_access_token(username: str = Form(...), password: str = Form
     )
 
 
+def get_llm_function():
+    return llm_client.generate
+
+
 @app.post("/api/analyze", response_model=TextAnalysisResult, tags=["Text Analysis"])
 async def analyze_text_endpoint(
     text_input: TextInput,
-    current_user: UserOut = Depends(get_current_user)
+    current_user: UserOut = Depends(get_current_user),
+    llm_function: Callable = Depends(get_llm_function)
 ):
     """
     Analyze text using LLM
     
     This endpoint processes the provided text and returns analysis results.
     """
-    # TODO: Candidate should implement this using LLM integration
     try:
         # Call the analyze_text function that candidate will implement
-        result = analyze_text(text_input.text, text_input.analysis_type)
+        result = analyze_text(text_input.text, text_input.analysis_type, llm_function)
         
         # Record this analysis in history (simplified)
         new_history = AnalysisHistoryOut(
+            id=len(history) + 1,
             user_id=current_user.id,
             text_sample=text_input.text[:100] + "..." if len(text_input.text) > 100 else text_input.text,
             analysis_type=text_input.analysis_type,

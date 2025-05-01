@@ -63,6 +63,10 @@ class EntityResult(BaseModel):
     type: str
     confidence: float = Field(..., ge=0.0, le=1.0)
 
+class ClassificationResult(BaseModel):
+    """Result model for text classification"""
+    classification: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
 
 class TextAnalysisResult(BaseModel):
     """Result model for text analysis"""
@@ -71,7 +75,7 @@ class TextAnalysisResult(BaseModel):
     sentiment: Optional[SentimentResult] = None
     keywords: Optional[List[KeywordResult]] = None
     entities: Optional[List[EntityResult]] = None
-    classification: Optional[Dict[str, float]] = None
+    classification: Optional[List[ClassificationResult]] = None
     processed_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     
     @validator('*')
